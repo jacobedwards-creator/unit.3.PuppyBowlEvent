@@ -15,12 +15,58 @@ functions for each endpoint.
 */
 
 const puppyApi = api.injectEndpoints({
-  endpoints: (build) => ({}),
+  endpoints: (builder) => ({
+    // Get all puppies
+    getPuppies: builder.query({
+      query: () => 'players',
+      transformResponse: (response) => {
+        // Handle potential missing data in response
+        return response.data?.players || [];
+      },
+      providesTags: (result) => 
+        result
+          ? [...result.map(({ id }) => ({ type: 'Puppy', id })), 'Puppy']
+          : ['Puppy']
+    }),
+
+    // Get single puppy by ID
+    getPuppy: builder.query({
+      query: (id) => `players/${id}`,
+      transformResponse: (response) => response.data?.player || null,
+      providesTags: (result, error, id) => [{ type: 'Puppy', id }]
+    }),
+
+    // Add new puppy
+    addPuppy: builder.mutation({
+      query: (puppy) => ({
+        url: 'players',
+        method: 'POST',
+        body: {
+          name: puppy.name,
+          breed: puppy.breed,
+          imageUrl: puppy.imageUrl || 'https://loremflickr.com/200/300/dog'
+        }
+      }),
+      invalidatesTags: ['Puppy']
+    }),
+
+    // Delete puppy
+    deletePuppy: builder.mutation({
+      query: (id) => ({
+        url: `players/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [{ type: 'Puppy', id }]
+    })
+  })
 });
 
+// Export hooks for usage in components
 export const {
   useGetPuppiesQuery,
   useGetPuppyQuery,
   useAddPuppyMutation,
-  useDeletePuppyMutation,
+  useDeletePuppyMutation
 } = puppyApi;
+
+export default puppyApi;
